@@ -23,6 +23,8 @@ project, and we will not be able to grade you without a good README.
 This assignment has a considerable amount of performance analysis compared
 to implementation work. Complete the implementation early to leave time!
 
+Testing deployment...
+
 ### Credits
 
 - [Vite](https://vitejs.dev/)
