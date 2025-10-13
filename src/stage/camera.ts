@@ -8,9 +8,7 @@ class CameraUniforms {
 
     set viewProjMat(mat: Float32Array) {
         // TODO-1.1: set the first 16 elements of `this.floatView` to the input `mat`
-        for (let i = 0; i < 16; i++) {
-            this.floatView[i] = mat[i];
-        }
+        this.floatView.set(mat.subarray(0, 16), 0);
     }
 
     // TODO-2: add extra functions to set values needed for light clustering here
