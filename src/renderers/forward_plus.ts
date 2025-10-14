@@ -109,12 +109,12 @@ export class ForwardPlusRenderer extends renderer.Renderer {
         // - run the clustering compute shader
         // - run the main rendering pass, using the computed clusters for efficient lighting
 
-        // run the clustering compute shader:
-        // doLightClustering();
-
         // currently copied from naive rendering
         const encoder = renderer.device.createCommandEncoder();
         const canvasTextureView = renderer.context.getCurrentTexture().createView();
+
+        // run the clustering compute shader:
+        this.lights.doLightClustering(encoder);
 
         const renderPass = encoder.beginRenderPass({
             label: "naive render pass",

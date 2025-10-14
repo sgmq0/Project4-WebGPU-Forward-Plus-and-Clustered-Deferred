@@ -4,6 +4,9 @@
 var<uniform> cameraUniforms: CameraUniforms;
 
 @group(${bindGroup_scene}) @binding(1) 
+var<storage, read> lightSet: LightSet;
+
+@group(${bindGroup_scene}) @binding(2) 
 var<storage, read_write> clusterSet: ClusterSet;
 
 // ------------------------------------
@@ -14,6 +17,17 @@ var<storage, read_write> clusterSet: ClusterSet;
 //     - Calculate the depth bounds for this cluster in Z (near and far planes).
 //     - Convert these screen and depth bounds into view-space coordinates.
 //     - Store the computed bounding box (AABB) for the cluster.
+
+// helper function to convert screen space to view space
+fn screenToView(screen: vec3f) -> vec3f {
+    // convert to NDC
+    let ndcX = (screen.x / f32(cameraUniforms.cameraWidth)) * 2.0 - 1.0;
+    let ndcY = 1.0 - (screen.y / f32(cameraUniforms.cameraHeight)) * 2.0;
+    // this goes from [0,1] to [-1,1]
+    let ndcZ =  screen.z * 2.0 - 1.0;
+
+    return vec3f(0.0,0.0,0.0);
+}
 
 @compute
 @workgroup_size(${clusteringWorkgroupSize})
@@ -40,15 +54,21 @@ fn main(@builtin(global_invocation_id) globalIdx: vec3u) {
     let yMax = f32(clusterY + 1u) * clusterHeight;
 
     // calculate depth bounds
-    let near = 0.1; // near plane
-    let far = 100.0; // far plane
+    let near = f32(cameraUniforms.nearPlane);
+    let far = f32(cameraUniforms.farPlane);
     let zMin = near * pow(far / near, f32(clusterZ) / f32(${numClustersZ}));
     let zMax = near * pow(far / near, f32(clusterZ + 1u) / f32(${numClustersZ}));
 
-    let bboxMin = vec3f(xMin, yMin, zMin);
-    let bboxMax = vec3f(xMax, yMax, zMax);
+    // convert these into view space
+
+    // now convert these points to view space
+    let bboxMin = vec4f(xMin, yMin, zMin, 0.0);
+    let bboxMax = vec4f(xMax, yMax, zMax, 0.0);
 
     // find view space coordinates
+    let invProj = cameraUniforms.invProjMat;
+    let bboxMinView = invProj * bboxMin;
+    let bboxMaxView = invProj * bboxMax;
 }
 
 // ------------------------------------

@@ -38,6 +38,7 @@ export class Lights {
     constructor(camera: Camera) {
         this.camera = camera;
 
+        // setup lights compute shader
         this.lightSetStorageBuffer = device.createBuffer({
             label: "lights",
             size: 16 + this.lightsArray.byteLength, // 16 for numLights + padding
@@ -100,6 +101,7 @@ export class Lights {
 
         // TODO-2: initialize layouts, pipelines, textures, etc. needed for light clustering here
 
+        // setup cluster compute shader
         // create cluster set storage buffer
         this.clusterSetStorageBuffer = device.createBuffer({
             label: "cluster set",
@@ -111,10 +113,24 @@ export class Lights {
         this.clusteringComputeBindGroupLayout = device.createBindGroupLayout({
             label: "clustering bind group layout",
             entries: [
-                { // clusterSet
+                {   // camera uniforms
                     binding: 0,
                     visibility: GPUShaderStage.COMPUTE,
-                    buffer: { type: "storage" }
+                    buffer: {
+                        type: "uniform"
+                    }
+                }, { // lightSet
+                    binding: 1,
+                    visibility: GPUShaderStage.COMPUTE,
+                    buffer: { 
+                        type: "read-only-storage" 
+                    }
+                }, { // clusterSet
+                    binding: 2,
+                    visibility: GPUShaderStage.COMPUTE,
+                    buffer: { 
+                        type: "read-only-storage" 
+                    }
                 }
             ]
         });
@@ -126,6 +142,14 @@ export class Lights {
             entries: [
                 {
                     binding: 0,
+                    resource: {
+                        buffer: this.camera.uniformsBuffer
+                    }
+                }, {
+                    binding: 1,
+                    resource: { buffer: this.lightSetStorageBuffer }
+                }, {
+                    binding: 2,
                     resource: { buffer: this.clusterSetStorageBuffer }
                 }
             ]

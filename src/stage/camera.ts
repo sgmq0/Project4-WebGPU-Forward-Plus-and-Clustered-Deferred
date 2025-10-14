@@ -3,7 +3,7 @@ import { toRadians } from "../math_util";
 import { device, canvas, fovYDegrees, aspectRatio } from "../renderer";
 
 class CameraUniforms {
-    readonly buffer = new ArrayBuffer(18 * 4);
+    readonly buffer = new ArrayBuffer((16 + 16 + 4) * 4);
     private readonly floatView = new Float32Array(this.buffer);
 
     set viewProjMat(mat: Float32Array) {
@@ -11,12 +11,25 @@ class CameraUniforms {
         this.floatView.set(mat.subarray(0, 16), 0);
     }
 
+    set invProjMat(mat: Float32Array) {
+        this.floatView.set(mat.subarray(0, 16), 16);
+    }
+
     // TODO-2: add extra functions to set values needed for light clustering here
+    // width and height of camera
     set cameraWidth(width: number) {
         this.floatView[16] = width;
     }
     set cameraHeight(height: number) {
         this.floatView[17] = height;
+    }
+
+    // near and far plane
+    set nearPlane(near: number) {
+        this.floatView[18] = near;
+    }
+    set farPlane(far: number) {
+        this.floatView[19] = far;
     }
 }
 
@@ -52,6 +65,17 @@ export class Camera {
         });
         
         this.projMat = mat4.perspective(toRadians(fovYDegrees), aspectRatio, Camera.nearPlane, Camera.farPlane);
+        
+        // inverse projection matrix
+        this.uniforms.invProjMat = mat4.inverse(this.projMat);
+
+        // screen size
+        this.uniforms.cameraWidth = canvas.width;
+        this.uniforms.cameraHeight = canvas.height;
+
+        // near/far plane
+        this.uniforms.nearPlane = Camera.nearPlane;
+        this.uniforms.farPlane = Camera.farPlane;
 
         this.rotateCamera(0, 0); // set initial camera vectors
 
@@ -145,8 +169,6 @@ export class Camera {
         this.uniforms.viewProjMat = viewProjMat;
 
         // TODO-2: write to extra buffers needed for light clustering here
-        this.uniforms.cameraWidth = canvas.width;
-        this.uniforms.cameraHeight = canvas.height;
 
         // TODO-1.1: upload `this.uniforms.buffer` (host side) to `this.uniformsBuffer` (device side)
         // check `lights.ts` for examples of using `device.queue.writeBuffer()`
