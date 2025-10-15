@@ -19,7 +19,7 @@ export class ForwardPlusRenderer extends renderer.Renderer {
 
         // currently copied from naive rendering
         this.sceneUniformsBindGroupLayout = renderer.device.createBindGroupLayout({
-            label: "scene uniforms bind group layout",
+            label: "scene uniforms bind group layout (forward+)",
             entries: [
                 {   // camera uniforms
                     binding: 0,
@@ -37,14 +37,14 @@ export class ForwardPlusRenderer extends renderer.Renderer {
                     binding: 2,
                     visibility: GPUShaderStage.FRAGMENT,
                     buffer: { 
-                        type: "read-only-storage" 
+                        type: "read-only-storage"
                     }
                 }
             ]
         });
         
         this.sceneUniformsBindGroup = renderer.device.createBindGroup({
-            label: "scene uniforms bind group",
+            label: "scene uniforms bind group (forward+)",
             layout: this.sceneUniformsBindGroupLayout,
             entries: [
                 {
@@ -71,7 +71,7 @@ export class ForwardPlusRenderer extends renderer.Renderer {
 
         this.pipeline = renderer.device.createRenderPipeline({
             layout: renderer.device.createPipelineLayout({
-                label: "naive pipeline layout",
+                label: "forward+ pipeline layout",
                 bindGroupLayouts: [
                     this.sceneUniformsBindGroupLayout,
                     renderer.modelBindGroupLayout,
@@ -85,14 +85,14 @@ export class ForwardPlusRenderer extends renderer.Renderer {
             },
             vertex: {
                 module: renderer.device.createShaderModule({
-                    label: "naive vert shader",
+                    label: "forward+ vert shader",
                     code: shaders.naiveVertSrc
                 }),
                 buffers: [ renderer.vertexBufferLayout ]
             },
             fragment: {
                 module: renderer.device.createShaderModule({
-                    label: "naive frag shader",
+                    label: "forward+ frag shader",
                     code: shaders.naiveFragSrc, // change this to forward plus shader later
                 }),
                 targets: [
@@ -117,7 +117,7 @@ export class ForwardPlusRenderer extends renderer.Renderer {
         this.lights.doLightClustering(encoder);
 
         const renderPass = encoder.beginRenderPass({
-            label: "naive render pass",
+            label: "forward+ render pass",
             colorAttachments: [
                 {
                     view: canvasTextureView,

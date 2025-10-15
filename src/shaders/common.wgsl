@@ -12,11 +12,10 @@ struct LightSet {
 
 // TODO-2: you may want to create a ClusterSet struct similar to LightSet
 struct Cluster {
-    AABB_min: vec3f,
-    AABB_max: vec3f,
+    AABB_min: vec4f,
+    AABB_max: vec4f,
     numLights: u32,
-    //lights: array<Light>
-    // TODO-2: figure out a better way to store lights
+    lights: array<u32, ${maxLightsPerCluster}>
 }
 
 struct ClusterSet {
@@ -28,6 +27,7 @@ struct CameraUniforms {
     // TODO-1.3: add an entry for the view proj mat (of type mat4x4f)
     viewProjMat: mat4x4f,
     invProjMat: mat4x4f,
+    viewMat: mat4x4f,
 
     cameraWidth: u32,
     cameraHeight: u32,

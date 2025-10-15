@@ -105,7 +105,8 @@ export class Lights {
         // create cluster set storage buffer
         this.clusterSetStorageBuffer = device.createBuffer({
             label: "cluster set",
-            size: shaders.constants.numClusters * 32, // each cluster has an AABB (2 vec3f) + numLights (u32) + padding
+            // 2 * aabb_min + 2 * aabb_max (both are vec4f) + numLights + lights array
+            size: shaders.constants.numClusters * (2 * 16 + 4 + 4 * shaders.constants.maxLightsPerCluster),
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
 
@@ -129,7 +130,7 @@ export class Lights {
                     binding: 2,
                     visibility: GPUShaderStage.COMPUTE,
                     buffer: { 
-                        type: "read-only-storage" 
+                        type: "storage" 
                     }
                 }
             ]
@@ -195,10 +196,7 @@ export class Lights {
 
         computePass.setBindGroup(0, this.clusteringComputeBindGroup);
 
-        const numClusters = shaders.constants.numClusters;
-        const workgroupCount = Math.ceil(numClusters / shaders.constants.clusteringWorkgroupSize);
-        computePass.dispatchWorkgroups(workgroupCount);
-
+        computePass.dispatchWorkgroups(16, 9, 24);
         computePass.end();
     }
 
