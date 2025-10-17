@@ -23,7 +23,7 @@ export class ForwardPlusRenderer extends renderer.Renderer {
             entries: [
                 {   // camera uniforms
                     binding: 0,
-                    visibility: GPUShaderStage.VERTEX,
+                    visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
                     buffer: {
                         type: "uniform"
                     }
@@ -93,7 +93,7 @@ export class ForwardPlusRenderer extends renderer.Renderer {
             fragment: {
                 module: renderer.device.createShaderModule({
                     label: "forward+ frag shader",
-                    code: shaders.naiveFragSrc, // change this to forward plus shader later
+                    code: shaders.forwardPlusFragSrc, // change this to forward plus shader later
                 }),
                 targets: [
                     {
