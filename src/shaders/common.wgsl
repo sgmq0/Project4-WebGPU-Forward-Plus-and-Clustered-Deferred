@@ -28,11 +28,10 @@ struct CameraUniforms {
     viewProjMat: mat4x4f,
     invProjMat: mat4x4f,
     viewMat: mat4x4f,
-
-    cameraWidth: u32,
-    cameraHeight: u32,
-    nearPlane: u32,
-    farPlane: u32,
+    cameraWidth: f32,
+    cameraHeight: f32,
+    nearPlane: f32,
+    farPlane: f32,
 }
 
 // CHECKITOUT: this special attenuation function ensures lights don't affect geometry outside the maximum light radius
