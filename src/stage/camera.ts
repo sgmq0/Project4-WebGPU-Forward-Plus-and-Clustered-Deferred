@@ -3,8 +3,14 @@ import { toRadians } from "../math_util";
 import { device, canvas, fovYDegrees, aspectRatio } from "../renderer";
 
 class CameraUniforms {
-    readonly buffer = new ArrayBuffer(256);
-    private readonly floatView = new Float32Array(this.buffer);
+    readonly buffer = new ArrayBuffer(208);
+    private readonly floatView = new Float32Array(this.buffer, 0, 16);
+    private readonly invProjMatView = new Float32Array(this.buffer, 64, 16);
+    private readonly viewMatView = new Float32Array(this.buffer, 128, 16);
+    private readonly cameraWidthView = new Float32Array(this.buffer, 192, 1);
+    private readonly cameraHeightView = new Float32Array(this.buffer, 196, 1)
+    private readonly nearPlaneView = new Float32Array(this.buffer, 200, 1);
+    private readonly farPlaneView = new Float32Array(this.buffer, 204, 1);
 
     set viewProjMat(mat: Float32Array) {
         // TODO-1.1: set the first 16 elements of `this.floatView` to the input `mat`
@@ -14,27 +20,27 @@ class CameraUniforms {
     // TODO-2: add extra functions to set values needed for light clustering here
 
     set invProjMat(mat: Float32Array) {
-        this.floatView.set(mat.subarray(0, 16), 16);
+        this.invProjMatView.set(mat.subarray(0, 16), 0);
     }
 
     set viewMat(mat: Float32Array) {
-        this.floatView.set(mat.subarray(0, 16), 32);
+        this.viewMatView.set(mat.subarray(0, 16), 0);
     }
 
     // width and height of camera
     set cameraWidth(width: number) {
-        this.floatView[48] = width;
+        this.cameraWidthView[0] = width;
     }
     set cameraHeight(height: number) {
-        this.floatView[49] = height;
+        this.cameraHeightView[0] = height;
     }
 
     // near and far plane
     set nearPlane(near: number) {
-        this.floatView[50] = near;
+        this.nearPlaneView[0] = near;
     }
     set farPlane(far: number) {
-        this.floatView[51] = far;
+        this.farPlaneView[0] = far;
     }
 }
 

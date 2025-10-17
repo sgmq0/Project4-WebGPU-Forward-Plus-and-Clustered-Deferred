@@ -106,7 +106,7 @@ export class Lights {
         this.clusterSetStorageBuffer = device.createBuffer({
             label: "cluster set",
             // 2 * aabb_min + 2 * aabb_max (both are vec4f) + numLights + lights array
-            size: shaders.constants.numClusters * (2 * 16 + 4 + 4 * shaders.constants.maxLightsPerCluster),
+            size: shaders.constants.numClusters * (2 * 16 + 4 + 4 * shaders.constants.maxLightsPerCluster) + 4,
             usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
         });
 
