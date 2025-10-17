@@ -126,8 +126,7 @@ fn main(@builtin(global_invocation_id) globalIdx: vec3u) {
     }
 
     // Store the number of lights assigned to this cluster.
-    //clusterSet.clusters[clusterIdx].numLights = u32(lightCount);
-    clusterSet.clusters[clusterIdx].numLights = u32(50);
+    clusterSet.clusters[clusterIdx].numLights = u32(lightCount);
 }
 
 // ------------------------------------

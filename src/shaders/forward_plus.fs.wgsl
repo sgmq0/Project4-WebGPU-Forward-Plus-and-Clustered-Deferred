@@ -68,10 +68,11 @@ fn main(in: FragmentInput) -> @location(0) vec4f
     let numLights = clusterSet.clusters[clusterIndex].numLights;
 
     // debug number of lights by coloring clusters
-    //var clusterColor = f32(numLights) / f32(${maxLightsPerCluster});
-    var col = debugColor(xCluster, yCluster, zCluster);
-    return vec4f(col, 1.0);
-    //return vec4f(vec3f(clusterColor, clusterColor, clusterColor), 1.0);
+    var clusterColor = f32(numLights) / f32(${maxLightsPerCluster});
+    return vec4f(vec3f(clusterColor, clusterColor, clusterColor), 1.0);
+
+    // var col = debugColor(xCluster, yCluster, zCluster);
+    // return vec4f(col, 1.0);
 
     // let diffuseColor = textureSample(diffuseTex, diffuseTexSampler, in.uv);
     // if (diffuseColor.a < 0.5f) {
