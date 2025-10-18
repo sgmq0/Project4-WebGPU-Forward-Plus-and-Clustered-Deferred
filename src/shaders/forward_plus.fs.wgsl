@@ -1,4 +1,4 @@
-// TODO-2: implement the Forward+ fragment shader
+// implements the Forward+ fragment shader
 
 @group(${bindGroup_scene}) @binding(0) 
 var<uniform> cameraUniforms: CameraUniforms;

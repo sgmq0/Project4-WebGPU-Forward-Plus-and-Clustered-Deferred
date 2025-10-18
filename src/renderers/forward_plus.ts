@@ -3,7 +3,6 @@ import * as shaders from '../shaders/shaders';
 import { Stage } from '../stage/stage';
 
 export class ForwardPlusRenderer extends renderer.Renderer {
-    // currently copied from naive rendering
     sceneUniformsBindGroupLayout: GPUBindGroupLayout;
     sceneUniformsBindGroup: GPUBindGroup;
 
@@ -15,9 +14,7 @@ export class ForwardPlusRenderer extends renderer.Renderer {
     constructor(stage: Stage) {
         super(stage);
 
-        // TODO-2: initialize layouts, pipelines, textures, etc. needed for Forward+ here
-
-        // currently copied from naive rendering
+        // initialize layouts, pipelines, textures, etc. needed for Forward+ 
         this.sceneUniformsBindGroupLayout = renderer.device.createBindGroupLayout({
             label: "scene uniforms bind group layout (forward+)",
             entries: [
@@ -93,7 +90,7 @@ export class ForwardPlusRenderer extends renderer.Renderer {
             fragment: {
                 module: renderer.device.createShaderModule({
                     label: "forward+ frag shader",
-                    code: shaders.forwardPlusFragSrc, // change this to forward plus shader later
+                    code: shaders.forwardPlusFragSrc,
                 }),
                 targets: [
                     {
@@ -105,17 +102,14 @@ export class ForwardPlusRenderer extends renderer.Renderer {
     }
 
     override draw() {
-        // TODO-2: run the Forward+ rendering pass:
-        // - run the clustering compute shader
-        // - run the main rendering pass, using the computed clusters for efficient lighting
 
-        // currently copied from naive rendering
         const encoder = renderer.device.createCommandEncoder();
         const canvasTextureView = renderer.context.getCurrentTexture().createView();
 
         // run the clustering compute shader:
         this.lights.doLightClustering(encoder);
 
+        // run the main rendering pass, using the computed clusters for efficient lighting
         const renderPass = encoder.beginRenderPass({
             label: "forward+ render pass",
             colorAttachments: [

@@ -1,4 +1,4 @@
-// TODO-2: implement the light clustering compute shader
+// implements the light clustering compute shader
 
 @group(${bindGroup_scene}) @binding(0) 
 var<uniform> cameraUniforms: CameraUniforms;
