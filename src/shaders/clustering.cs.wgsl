@@ -9,26 +9,16 @@ var<storage, read> lightSet: LightSet;
 @group(${bindGroup_scene}) @binding(2) 
 var<storage, read_write> clusterSet: ClusterSet;
 
-// ------------------------------------
-// Calculating cluster bounds:
-// ------------------------------------
-// For each cluster (X, Y, Z):
-//     - Calculate the screen-space bounds for this cluster in 2D (XY).
-//     - Calculate the depth bounds for this cluster in Z (near and far planes).
-//     - Convert these screen and depth bounds into view-space coordinates.
-//     - Store the computed bounding box (AABB) for the cluster.
-
 // helper function to convert screen space to view space
 fn screenToView(screen: vec3f) -> vec3f {
     // convert to NDC
     let ndcX = (screen.x / f32(cameraUniforms.cameraWidth)) * 2.0 - 1.0;
     let ndcY = 1.0 - (screen.y / f32(cameraUniforms.cameraHeight)) * 2.0;
-    // this goes from [0,1] to [-1,1]
     let ndcZ =  screen.z * 2.0 - 1.0;
 
     // convert to view space
-    let ndc = vec4f(ndcX, ndcY, ndcZ, 1.0);
-    let view = cameraUniforms.invProjMat * ndc;
+    let clip = vec4f(ndcX, ndcY, ndcZ, 1.0);
+    let view = cameraUniforms.invProjMat * clip;
 
     // perspective divide
     return view.xyz / view.w; 
@@ -49,6 +39,11 @@ fn testSphereAABB(bboxMin: vec4f, bboxMax: vec4f, center: vec3f, radius: f32) ->
     return dmin <= radius * radius;
 }
 
+fn lineIntersectionToZPlane(B: vec3f, zDistance: f32) -> vec3f {
+    let t = zDistance / B.z;
+    return t * B;
+}
+
 @compute
 @workgroup_size(${clusteringWorkgroupSize})
 fn main(@builtin(global_invocation_id) globalIdx: vec3u) {
@@ -63,46 +58,41 @@ fn main(@builtin(global_invocation_id) globalIdx: vec3u) {
     let clusterIdx = clusterX + clusterY * ${numClustersX}u + clusterZ * ${numClustersX}u * ${numClustersY}u;
 
     // Calculate the screen-space bounds for this cluster in 2D (XY).
-    let screenWidth = cameraUniforms.cameraWidth;
-    let screenHeight = cameraUniforms.cameraHeight;
+    let screenWidth = f32(cameraUniforms.cameraWidth);
+    let screenHeight = f32(cameraUniforms.cameraHeight);
     let clusterWidth = f32(screenWidth) / f32(${numClustersX});
     let clusterHeight = f32(screenHeight) / f32(${numClustersY});
+
+    // calculate 2d bounds in screen space
+    let maxPointScreen = vec4f(f32(clusterX + 1) * clusterWidth, f32(clusterY + 1) * clusterHeight, -1.0, 1.0); // top right
+    let minPointScreen = vec4f(f32(clusterX) * clusterWidth, f32(clusterY) * clusterHeight, -1.0, 1.0); // bottom left
+
+    // calculate 2d bounds in view space
+    let maxPointView = screenToView(maxPointScreen.xyz);
+    let minPointView = screenToView(minPointScreen.xyz);
+
+    // calculate depth bounds for this cluster in Z
+    let near = f32(cameraUniforms.nearPlane);
+    let far = f32(cameraUniforms.farPlane);
+    let zMin  = -near * pow(far / near, f32(clusterZ) / f32(${numClustersZ}));
+    let zMax   = -near * pow(far / near, (f32(clusterZ) + 1.0) / f32(${numClustersZ}));
+
+    let minPointNear = lineIntersectionToZPlane(minPointView, zMin);
+    let minPointFar  = lineIntersectionToZPlane(minPointView, zMax);
+    let maxPointNear = lineIntersectionToZPlane(maxPointView, zMin);
+    let maxPointFar  = lineIntersectionToZPlane(maxPointView, zMax);
+
+    let minPointAABB = min(min(minPointNear, minPointFar),min(maxPointNear, maxPointFar));
+    let maxPointAABB = max(max(minPointNear, minPointFar),max(maxPointNear, maxPointFar));
 
     let xMin = f32(clusterX) * clusterWidth;
     let xMax = f32(clusterX + 1u) * clusterWidth;
     let yMin = f32(clusterY) * clusterHeight;
     let yMax = f32(clusterY + 1u) * clusterHeight;
 
-    // Calculate the depth bounds for this cluster in Z (near and far planes).
-    let near = f32(cameraUniforms.nearPlane);
-    let far = f32(cameraUniforms.farPlane);
-    let zMin = near * pow(far / near, f32(clusterZ) / f32(${numClustersZ}));
-    let zMax = near * pow(far / near, f32(clusterZ + 1u) / f32(${numClustersZ}));
-
-    // Convert these screen and depth bounds into view-space coordinates.
-    let viewSpacePoints = array<vec3f, 8>(
-        screenToView(vec3f(xMin, yMin, zMin)),
-        screenToView(vec3f(xMax, yMin, zMin)),
-        screenToView(vec3f(xMin, yMax, zMin)),
-        screenToView(vec3f(xMax, yMax, zMin)),
-        screenToView(vec3f(xMin, yMin, zMax)),
-        screenToView(vec3f(xMax, yMin, zMax)),
-        screenToView(vec3f(xMin, yMax, zMax)),
-        screenToView(vec3f(xMax, yMax, zMax))
-    );
-
-    // find min and max point
-    var bboxMin = vec3f(1e10, 1e10, 1e10);
-    var bboxMax = vec3f(-1e10, -1e10, -1e10);
-    for (var i = 0; i < 8; i++) {
-        let p = viewSpacePoints[i];
-        bboxMin = min(bboxMin, p);
-        bboxMax = max(bboxMax, p);
-    }
-
     // Store the computed bounding box (AABB) for the cluster.
-    clusterSet.clusters[clusterIdx].AABB_min = vec4f(bboxMin, 1.0);
-    clusterSet.clusters[clusterIdx].AABB_max = vec4f(bboxMax, 1.0);
+    clusterSet.clusters[clusterIdx].AABB_min = vec4f(minPointAABB, 1.0);
+    clusterSet.clusters[clusterIdx].AABB_max = vec4f(maxPointAABB, 1.0);
 
     // Initialize a counter for the number of lights in this cluster.
     var lightCount = 0u;
@@ -128,16 +118,3 @@ fn main(@builtin(global_invocation_id) globalIdx: vec3u) {
     // Store the number of lights assigned to this cluster.
     clusterSet.clusters[clusterIdx].numLights = u32(lightCount);
 }
-
-// ------------------------------------
-// Assigning lights to clusters:
-// ------------------------------------
-// For each cluster:
-//     - Initialize a counter for the number of lights in this cluster.
-
-//     For each light:
-//         - Check if the light intersects with the cluster’s bounding box (AABB).
-//         - If it does, add the light to the cluster's light list.
-//         - Stop adding lights if the maximum number of lights is reached.
-
-//     - Store the number of lights assigned to this cluster.

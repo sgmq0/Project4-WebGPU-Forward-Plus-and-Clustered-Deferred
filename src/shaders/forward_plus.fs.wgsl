@@ -1,19 +1,5 @@
 // TODO-2: implement the Forward+ fragment shader
 
-// See naive.fs.wgsl for basic fragment shader setup; this shader should use light clusters instead of looping over all lights
-
-// ------------------------------------
-// Shading process:
-// ------------------------------------
-// Determine which cluster contains the current fragment.
-// Retrieve the number of lights that affect the current fragment from the cluster’s data.
-// Initialize a variable to accumulate the total light contribution for the fragment.
-// For each light in the cluster:
-//     Access the light's properties using its index.
-//     Calculate the contribution of the light based on its position, the fragment’s position, and the surface normal.
-//     Add the calculated contribution to the total light accumulation.
-// Multiply the fragment’s diffuse color by the accumulated light contribution.
-// Return the final color, ensuring that the alpha component is set appropriately (typically to 1).
 @group(${bindGroup_scene}) @binding(0) 
 var<uniform> cameraUniforms: CameraUniforms;
 
@@ -59,14 +45,17 @@ fn main(in: FragmentInput) -> @location(0) vec4f
     // find x and y cluster
     let screenPos = cameraUniforms.viewProjMat * vec4f(in.pos, 1.0);
     let ndcPos = screenPos.xyz / screenPos.w;
-    let xCluster = u32((ndcPos.x + 1.0) * 0.5 * f32(${numClustersX}));
-    let yCluster = u32((ndcPos.y + 1.0) * 0.5 * f32(${numClustersY}));
+    var xCluster = u32((ndcPos.x + 1.0) * 0.5 * f32(${numClustersX}));
+    var yCluster = u32((ndcPos.y + 1.0) * 0.5 * f32(${numClustersY}));
+    xCluster = clamp(xCluster, 0u, ${numClustersX} - 1u);
+    yCluster = clamp(yCluster, 0u, ${numClustersY} - 1u);
     
     // find z cluster
     let near = cameraUniforms.nearPlane;
     let far = cameraUniforms.farPlane;
     let view = cameraUniforms.viewMat * vec4f(in.pos, 1.0);
-    let zCluster = u32(log2(abs(view.z) / near) / log2(far / near) * f32(${numClustersZ}));
+    var zCluster = u32(log2(abs(view.z) / near) / log2(far / near) * f32(${numClustersZ}));
+    zCluster = clamp(zCluster, 0u, ${numClustersZ} - 1u);
 
     // Determine which cluster contains the current fragment.
     let clusterIndex = xCluster + yCluster * ${numClustersX}u + zCluster * ${numClustersX}u * ${numClustersY}u;
