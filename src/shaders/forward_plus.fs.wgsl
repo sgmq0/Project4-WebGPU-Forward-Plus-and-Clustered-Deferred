@@ -14,6 +14,7 @@ var<storage, read> clusterSet: ClusterSet;
 
 struct FragmentInput
 {
+    @builtin(position) fragPos: vec4f,
     @location(0) pos: vec3f,
     @location(1) nor: vec3f,
     @location(2) uv: vec2f,
@@ -49,8 +50,12 @@ fn main(in: FragmentInput) -> @location(0) vec4f
     // find x and y cluster
     let clipPos = cameraUniforms.viewProjMat * vec4f(in.pos, 1.0);
     let ndcPos = clipPos.xyz / clipPos.w;
-    var xCluster = u32((ndcPos.x * 0.5 + 0.5) * f32(${numClustersX}));
-    var yCluster = u32((ndcPos.y * 0.5 + 0.5) * f32(${numClustersY}));
+    var xCluster = u32(in.fragPos.x / screenWidth * f32(${numClustersX})); 
+    var yCluster = u32(in.fragPos.y / screenHeight * f32(${numClustersY})); 
+    // var xCluster = u32((ndcPos.x + 1.0) * 0.5 * f32(${numClustersX})); 
+    // var yCluster = u32((ndcPos.y + 1.0) * 0.5 * f32(${numClustersY})); 
+    xCluster = clamp(xCluster, 0u, ${numClustersX} - 1u); 
+    yCluster = clamp(yCluster, 0u, ${numClustersY} - 1u);
     
     // find z cluster
     let near = f32(cameraUniforms.nearPlane);
