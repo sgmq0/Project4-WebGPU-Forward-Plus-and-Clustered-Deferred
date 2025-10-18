@@ -42,19 +42,21 @@ fn debugColor(clusterIndex: u32, zIndex: u32) -> vec3f {
 fn main(in: FragmentInput) -> @location(0) vec4f
 {
 
+    let view = cameraUniforms.viewMat * vec4f(in.pos, 1.0);
+    let screenWidth = cameraUniforms.cameraWidth;
+    let screenHeight = cameraUniforms.cameraHeight;
+
     // find x and y cluster
-    let screenPos = cameraUniforms.viewProjMat * vec4f(in.pos, 1.0);
-    let ndcPos = screenPos.xyz / screenPos.w;
-    var xCluster = u32((ndcPos.x + 1.0) * 0.5 * f32(${numClustersX}));
-    var yCluster = u32((ndcPos.y + 1.0) * 0.5 * f32(${numClustersY}));
-    xCluster = clamp(xCluster, 0u, ${numClustersX} - 1u);
-    yCluster = clamp(yCluster, 0u, ${numClustersY} - 1u);
+    let clipPos = cameraUniforms.viewProjMat * vec4f(in.pos, 1.0);
+    let ndcPos = clipPos.xyz / clipPos.w;
+    var xCluster = u32((ndcPos.x * 0.5 + 0.5) * f32(${numClustersX}));
+    var yCluster = u32((ndcPos.y * 0.5 + 0.5) * f32(${numClustersY}));
     
     // find z cluster
-    let near = cameraUniforms.nearPlane;
-    let far = cameraUniforms.farPlane;
-    let view = cameraUniforms.viewMat * vec4f(in.pos, 1.0);
-    var zCluster = u32(log2(abs(view.z) / near) / log2(far / near) * f32(${numClustersZ}));
+    let near = f32(cameraUniforms.nearPlane);
+    let far = f32(cameraUniforms.farPlane);
+    let viewZ = max(-view.z, 1e-4);
+    var zCluster = u32(log2(viewZ / near) / log2(far / near) * f32(${numClustersZ}));
     zCluster = clamp(zCluster, 0u, ${numClustersZ} - 1u);
 
     // Determine which cluster contains the current fragment.
@@ -62,10 +64,6 @@ fn main(in: FragmentInput) -> @location(0) vec4f
     
     // Retrieve the number of lights that affect the current fragment from the cluster’s data.
     let numLights = clusterSet.clusters[clusterIndex].numLights;
-
-    // debug clusters
-    // let color = debugColor(clusterIndex, zCluster);
-    // return vec4f(color, 1.0);
 
     // Initialize a variable to accumulate the total light contribution for the fragment.
     var totalLightContrib = vec3f(0, 0, 0);

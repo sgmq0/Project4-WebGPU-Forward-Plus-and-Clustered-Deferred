@@ -10,33 +10,25 @@ var<storage, read> lightSet: LightSet;
 var<storage, read_write> clusterSet: ClusterSet;
 
 // helper function to convert screen space to view space
-fn screenToView(screen: vec3f) -> vec3f {
+fn screenToView(screen: vec4f) -> vec4f {
     // convert to NDC
-    let ndcX = (screen.x / f32(cameraUniforms.cameraWidth)) * 2.0 - 1.0;
-    let ndcY = 1.0 - (screen.y / f32(cameraUniforms.cameraHeight)) * 2.0;
-    let ndcZ =  screen.z * 2.0 - 1.0;
+    let screenDimensions = vec2f(f32(cameraUniforms.cameraWidth), f32(cameraUniforms.cameraHeight));
+    let texCoord = screen.xy / screenDimensions;
+
+    let clip = vec4(vec2(texCoord.x, 1.0 - texCoord.y), screen.z, screen.w) * 2.0 - 1.0;
 
     // convert to view space
-    let clip = vec4f(ndcX, ndcY, ndcZ, 1.0);
     let view = cameraUniforms.invProjMat * clip;
 
     // perspective divide
-    return view.xyz / view.w; 
+    return view / view.w; 
 }
 
 // helper function to test intersection between sphere and AABB
-fn testSphereAABB(bboxMin: vec4f, bboxMax: vec4f, center: vec3f, radius: f32) -> bool {
-    var dmin = 0.0;
-
-    for (var i = 0; i < 3; i++) {
-        if (center[i] < bboxMin[i]) {
-            dmin += (center[i] - bboxMin[i]) * (center[i] - bboxMin[i]);
-        } else if (center[i] > bboxMax[i]) {
-            dmin += (center[i] - bboxMax[i]) * (center[i] - bboxMax[i]);
-        }
-    }
-
-    return dmin <= radius * radius;
+fn testSphereAABB(bboxMin: vec3f, bboxMax: vec3f, center: vec3f, radius: f32) -> bool {
+    let dist = max(vec3f(0, 0, 0), max(bboxMin - center, center - bboxMax));
+    let distSq = dot(dist, dist);
+    return distSq < radius * radius;
 }
 
 fn lineIntersectionToZPlane(B: vec3f, zDistance: f32) -> vec3f {
@@ -45,7 +37,7 @@ fn lineIntersectionToZPlane(B: vec3f, zDistance: f32) -> vec3f {
 }
 
 @compute
-@workgroup_size(${clusteringWorkgroupSize})
+@workgroup_size(8, 8, 4)
 fn main(@builtin(global_invocation_id) globalIdx: vec3u) {
     let clusterX = globalIdx.x;
     let clusterY = globalIdx.y;
@@ -68,8 +60,8 @@ fn main(@builtin(global_invocation_id) globalIdx: vec3u) {
     let minPointScreen = vec4f(f32(clusterX) * clusterWidth, f32(clusterY) * clusterHeight, -1.0, 1.0); // bottom left
 
     // calculate 2d bounds in view space
-    let maxPointView = screenToView(maxPointScreen.xyz);
-    let minPointView = screenToView(minPointScreen.xyz);
+    let maxPointView = screenToView(maxPointScreen).xyz;
+    let minPointView = screenToView(minPointScreen).xyz;
 
     // calculate depth bounds for this cluster in Z
     let near = f32(cameraUniforms.nearPlane);
@@ -77,10 +69,10 @@ fn main(@builtin(global_invocation_id) globalIdx: vec3u) {
     let zMin  = -near * pow(far / near, f32(clusterZ) / f32(${numClustersZ}));
     let zMax   = -near * pow(far / near, (f32(clusterZ) + 1.0) / f32(${numClustersZ}));
 
-    let minPointNear = lineIntersectionToZPlane(minPointView, zMin);
-    let minPointFar  = lineIntersectionToZPlane(minPointView, zMax);
-    let maxPointNear = lineIntersectionToZPlane(maxPointView, zMin);
-    let maxPointFar  = lineIntersectionToZPlane(maxPointView, zMax);
+    let minPointNear = minPointView * (zMin / minPointView.z);
+    let minPointFar  = minPointView * (zMax / minPointView.z);
+    let maxPointNear = maxPointView * (zMin / maxPointView.z);
+    let maxPointFar  = maxPointView * (zMax / maxPointView.z);
 
     let minPointAABB = min(min(minPointNear, minPointFar),min(maxPointNear, maxPointFar));
     let maxPointAABB = max(max(minPointNear, minPointFar),max(maxPointNear, maxPointFar));
@@ -99,6 +91,7 @@ fn main(@builtin(global_invocation_id) globalIdx: vec3u) {
     let maxLights = ${maxLightsPerCluster}u;
     
     for (var lightIdx = 0u; lightIdx < lightSet.numLights; lightIdx++) {
+
         // Stop adding lights if the maximum number of lights is reached.
         if (lightCount >= maxLights) {
             break;
@@ -108,7 +101,7 @@ fn main(@builtin(global_invocation_id) globalIdx: vec3u) {
         var lightPosView = cameraUniforms.viewMat * vec4f(light.pos, 1.0);
 
         // check if the light intersects with the cluster's bounding box
-        if (testSphereAABB(clusterSet.clusters[clusterIdx].AABB_min, clusterSet.clusters[clusterIdx].AABB_max, lightPosView.xyz, ${lightRadius})) {
+        if (testSphereAABB(minPointAABB, maxPointAABB, lightPosView.xyz, ${lightRadius})) {
             // If it does, add the light to the cluster's light list
             clusterSet.clusters[clusterIdx].lights[lightCount] = lightIdx;
             lightCount = lightCount + 1u;
