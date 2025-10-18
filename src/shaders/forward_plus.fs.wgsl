@@ -59,19 +59,14 @@ fn main(in: FragmentInput) -> @location(0) vec4f
     // find x and y cluster
     let screenPos = cameraUniforms.viewProjMat * vec4f(in.pos, 1.0);
     let ndcPos = screenPos.xyz / screenPos.w;
-    let xCluster = clamp(u32((ndcPos.x + 1.0) * 0.5 * f32(${numClustersX})), 0u, ${numClustersX} - 1u);
-    let yCluster = clamp(u32((ndcPos.y + 1.0) * 0.5 * f32(${numClustersY})), 0u, ${numClustersY} - 1u);
+    let xCluster = u32((ndcPos.x + 1.0) * 0.5 * f32(${numClustersX}));
+    let yCluster = u32((ndcPos.y + 1.0) * 0.5 * f32(${numClustersY}));
     
     // find z cluster
-    let zView = max(-in.viewPos.z, 0.001);
     let near = cameraUniforms.nearPlane;
     let far = cameraUniforms.farPlane;
-
-    let logDepthRange = log2(far / near);
-    let logZ = log2(zView);
-    let logNear = log2(near);
-    let slice = (logZ - logNear) / logDepthRange * f32(${numClustersZ}u);
-    let zCluster = clamp(u32(slice), 0u, ${numClustersZ} - 1u);
+    let view = cameraUniforms.viewMat * vec4f(in.pos, 1.0);
+    let zCluster = u32(log2(abs(view.z) / near) / log2(far / near) * f32(${numClustersZ}));
 
     // Determine which cluster contains the current fragment.
     let clusterIndex = xCluster + yCluster * ${numClustersX}u + zCluster * ${numClustersX}u * ${numClustersY}u;
@@ -79,12 +74,9 @@ fn main(in: FragmentInput) -> @location(0) vec4f
     // Retrieve the number of lights that affect the current fragment from the cluster’s data.
     let numLights = clusterSet.clusters[clusterIndex].numLights;
 
-    // debug number of lights by coloring clusters
-    //var clusterColor = f32(numLights) / f32(${maxLightsPerCluster} / 10.0);
-    //var color = vec3f(clusterColor, clusterColor, clusterColor);
-    //color = vec3f(f32(zCluster) / f32(${numClustersZ}), 0.0, 0.0);
-    //color = debugColor(clusterIndex, zCluster);
-    //return vec4f(color, 1.0);
+    // debug clusters
+    // let color = debugColor(clusterIndex, zCluster);
+    // return vec4f(color, 1.0);
 
     // Initialize a variable to accumulate the total light contribution for the fragment.
     var totalLightContrib = vec3f(0, 0, 0);
@@ -102,9 +94,6 @@ fn main(in: FragmentInput) -> @location(0) vec4f
 
     // Multiply the fragment’s diffuse color by the accumulated light contribution.
     let diffuseColor = textureSample(diffuseTex, diffuseTexSampler, in.uv);
-    if (diffuseColor.a < 0.5f) {
-        discard;
-    }
     var finalColor = diffuseColor.rgb * totalLightContrib;
 
     // Return the final color, ensuring that the alpha component is set appropriately (typically to 1).
