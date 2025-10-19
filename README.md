@@ -42,17 +42,18 @@ In clustered deferred rendering, we combine the functionality of clusters with a
 Then, we run a full-screen render pass to read from the texture, and compute lighting contribution using the clustering method.
 
 ## Performance analysis
+For consistency, I tested on a canvas with resolution 1920 x 1080. Additionally, all lights have radius 2. I did not test naive rendering beyond 1,500 lights as it was becoming inconveniently slow for my browser to run.
 
+![](img/performance_graph.png)
 
-### (TODO: Your README)
+Judging from the data collected, Forward+ and Clustered Deferred  seem to work equally fast until about 1,500 lights are introduced into the scene. From that point, we see that the speed it takes to render a frame with Forward+ slowly begins to increase, while the speed of Clustered Deferred rendering remains relatively consistent. **Overall, clustered deferred rendering is faster in all instances**. 
 
-*DO NOT* leave the README to the last minute! It is a crucial part of the
-project, and we will not be able to grade you without a good README.
+While clustered deferred rendering is faster, it also requires setting up a second render pass as well as saving textures in memory. The textures allow the renderer to calculate on a per-pixel basis instead of on a per-fragment basis, meaning that we avoid calculating fragments that are not seen by the camera. 
 
-This assignment has a considerable amount of performance analysis compared
-to implementation work. Complete the implementation early to leave time!
+Very nice!
 
-Testing deployment...
+### Overall thoughts
+Very much enjoyed this assignment. Deferred rendering my beloved
 
 ### Credits
 
