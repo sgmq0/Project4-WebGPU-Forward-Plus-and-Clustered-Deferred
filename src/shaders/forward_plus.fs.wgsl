@@ -1,16 +1,16 @@
 // implements the Forward+ fragment shader
 
-@group(${bindGroup_scene}) @binding(0) 
+@group(0) @binding(0) 
 var<uniform> cameraUniforms: CameraUniforms;
 
-@group(${bindGroup_scene}) @binding(1) 
+@group(0) @binding(1) 
 var<storage, read> lightSet: LightSet;
 
-@group(${bindGroup_scene}) @binding(2) 
+@group(0) @binding(2) 
 var<storage, read> clusterSet: ClusterSet;
 
-@group(${bindGroup_material}) @binding(0) var diffuseTex: texture_2d<f32>;
-@group(${bindGroup_material}) @binding(1) var diffuseTexSampler: sampler;
+@group(2) @binding(0) var diffuseTex: texture_2d<f32>;
+@group(2) @binding(1) var diffuseTexSampler: sampler;
 
 struct FragmentInput
 {
@@ -50,22 +50,22 @@ fn main(in: FragmentInput) -> @location(0) vec4f
     // find x and y cluster
     let clipPos = cameraUniforms.viewProjMat * vec4f(in.pos, 1.0);
     let ndcPos = clipPos.xyz / clipPos.w;
-    var xCluster = u32(in.fragPos.x / screenWidth * f32(${numClustersX})); 
-    var yCluster = u32(in.fragPos.y / screenHeight * f32(${numClustersY})); 
-    // var xCluster = u32((ndcPos.x + 1.0) * 0.5 * f32(${numClustersX})); 
-    // var yCluster = u32((ndcPos.y + 1.0) * 0.5 * f32(${numClustersY})); 
-    xCluster = clamp(xCluster, 0u, ${numClustersX} - 1u); 
-    yCluster = clamp(yCluster, 0u, ${numClustersY} - 1u);
+    var xCluster = u32(in.fragPos.x / screenWidth * f32(16)); 
+    var yCluster = u32(in.fragPos.y / screenHeight * f32(9)); 
+    // var xCluster = u32((ndcPos.x + 1.0) * 0.5 * f32(16)); 
+    // var yCluster = u32((ndcPos.y + 1.0) * 0.5 * f32(9)); 
+    xCluster = clamp(xCluster, 0u, 16 - 1u); 
+    yCluster = clamp(yCluster, 0u, 9 - 1u);
     
     // find z cluster
     let near = f32(cameraUniforms.nearPlane);
     let far = f32(cameraUniforms.farPlane);
     let viewZ = max(-view.z, 1e-4);
-    var zCluster = u32(log2(viewZ / near) / log2(far / near) * f32(${numClustersZ}));
-    zCluster = clamp(zCluster, 0u, ${numClustersZ} - 1u);
+    var zCluster = u32(log2(viewZ / near) / log2(far / near) * f32(24));
+    zCluster = clamp(zCluster, 0u, 24 - 1u);
 
     // Determine which cluster contains the current fragment.
-    let clusterIndex = xCluster + yCluster * ${numClustersX}u + zCluster * ${numClustersX}u * ${numClustersY}u;
+    let clusterIndex = xCluster + yCluster * 16u + zCluster * 16u * 9u;
     
     // Retrieve the number of lights that affect the current fragment from the cluster’s data.
     let numLights = clusterSet.clusters[clusterIndex].numLights;

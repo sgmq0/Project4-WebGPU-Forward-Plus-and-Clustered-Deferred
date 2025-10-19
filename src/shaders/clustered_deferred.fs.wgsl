@@ -1,17 +1,17 @@
 // TODO-3: implement the Clustered Deferred G-buffer fragment shader
 
 // This shader should only store G-buffer information and should not do any shading.
-@group(${bindGroup_scene}) @binding(0) 
+@group(0) @binding(0) 
 var<uniform> cameraUniforms: CameraUniforms;
 
-@group(${bindGroup_scene}) @binding(1) 
+@group(0) @binding(1) 
 var<storage, read> lightSet: LightSet;
 
-@group(${bindGroup_scene}) @binding(2) 
+@group(0) @binding(2) 
 var<storage, read> clusterSet: ClusterSet;
 
-@group(${bindGroup_material}) @binding(0) var diffuseTex: texture_2d<f32>;
-@group(${bindGroup_material}) @binding(1) var diffuseTexSampler: sampler;
+@group(2) @binding(0) var diffuseTex: texture_2d<f32>;
+@group(2) @binding(1) var diffuseTexSampler: sampler;
 
 struct FragmentInput
 {
