@@ -42,6 +42,10 @@ fn debugColor(clusterIndex: u32, zIndex: u32) -> vec3f {
 @fragment
 fn main(in: FragmentInput) -> @location(0) vec4f
 {
+    let diffuseColor = textureSample(diffuseTex, diffuseTexSampler, in.uv);
+    if (diffuseColor.a < 0.5f) {
+        discard;
+    }
 
     let view = cameraUniforms.viewMat * vec4f(in.pos, 1.0);
     let screenWidth = cameraUniforms.cameraWidth;
@@ -51,21 +55,21 @@ fn main(in: FragmentInput) -> @location(0) vec4f
     let clipPos = cameraUniforms.viewProjMat * vec4f(in.pos, 1.0);
     let ndcPos = clipPos.xyz / clipPos.w;
     var xCluster = u32(in.fragPos.x / screenWidth * f32(16)); 
-    var yCluster = u32(in.fragPos.y / screenHeight * f32(9)); 
+    var yCluster = u32(in.fragPos.y / screenHeight * f32(${numClustersY})); 
     // var xCluster = u32((ndcPos.x + 1.0) * 0.5 * f32(16)); 
-    // var yCluster = u32((ndcPos.y + 1.0) * 0.5 * f32(9)); 
+    // var yCluster = u32((ndcPos.y + 1.0) * 0.5 * f32(${numClustersY})); 
     xCluster = clamp(xCluster, 0u, 16 - 1u); 
-    yCluster = clamp(yCluster, 0u, 9 - 1u);
+    yCluster = clamp(yCluster, 0u, ${numClustersY} - 1u);
     
     // find z cluster
     let near = f32(cameraUniforms.nearPlane);
     let far = f32(cameraUniforms.farPlane);
     let viewZ = max(-view.z, 1e-4);
-    var zCluster = u32(log2(viewZ / near) / log2(far / near) * f32(24));
-    zCluster = clamp(zCluster, 0u, 24 - 1u);
+    var zCluster = u32(log2(viewZ / near) / log2(far / near) * f32(${numClustersZ}));
+    zCluster = clamp(zCluster, 0u, ${numClustersZ} - 1u);
 
     // Determine which cluster contains the current fragment.
-    let clusterIndex = xCluster + yCluster * 16u + zCluster * 16u * 9u;
+    let clusterIndex = xCluster + yCluster * 16u + zCluster * 16u * ${numClustersY}u;
     
     // Retrieve the number of lights that affect the current fragment from the cluster’s data.
     let numLights = clusterSet.clusters[clusterIndex].numLights;
@@ -85,7 +89,6 @@ fn main(in: FragmentInput) -> @location(0) vec4f
     }
 
     // Multiply the fragment’s diffuse color by the accumulated light contribution.
-    let diffuseColor = textureSample(diffuseTex, diffuseTexSampler, in.uv);
     var finalColor = diffuseColor.rgb * totalLightContrib;
 
     // Return the final color, ensuring that the alpha component is set appropriately (typically to 1).

@@ -14,6 +14,7 @@ var<storage, read> clusterSet: ClusterSet;
 @group(0) @binding(4) var colorTex : texture_2d<f32>;
 @group(0) @binding(5) var normalTex : texture_2d<f32>;
 @group(0) @binding(6) var textureSampler : sampler;
+@group(0) @binding(7) var depthTex : texture_2d<f32>;
 
 struct FragmentInput
 {

@@ -208,7 +208,7 @@ export class ClusteredDeferredRenderer extends renderer.Renderer {
                     sampler: {
                         type: 'filtering'
                     }
-                }
+                }, 
             ]
         });
 

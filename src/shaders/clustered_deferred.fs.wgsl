@@ -34,6 +34,9 @@ struct FragmentOutput
 fn main(in: FragmentInput) -> FragmentOutput
 {
     let diffuseColor = textureSample(diffuseTex, diffuseTexSampler, in.uv);
+    if (diffuseColor.a < 0.5f) {
+        discard;
+    }
     
     var out: FragmentOutput;
     out.pos = vec4f(in.pos, 1.0);
